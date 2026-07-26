@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aipos-backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - aipos-db-volume:/app/data
+      - aipos-roadmaps-volume:/app/roadmaps
+    environment:
+      - ENV=production
+      - DATABASE_URL=sqlite:////app/data/ai_pos.db
+      - SECRET_KEY=prod-secret-placeholder-change-me
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aipos-frontend
+    command: streamlit run app/frontend/main.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    volumes:
+      - aipos-db-volume:/app/data
+      - aipos-roadmaps-volume:/app/roadmaps
+    environment:
+      - DATABASE_URL=sqlite:////app/data/ai_pos.db
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  aipos-db-volume:
+  aipos-roadmaps-volume:

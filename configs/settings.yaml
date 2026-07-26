@@ -1,0 +1,46 @@
+user_profile:
+  name: "Placement Candidate"
+  wake_up_time: "07:00"
+  sleep_time: "23:00"
+  preferred_study_hours: 6
+  break_duration_minutes: 15
+  lunch_time: "13:00"
+  dinner_time: "20:00"
+  exercise_time: "18:00"
+
+scheduler:
+  buffer_ratio: 0.15  # Reserve 15% free catch-up time
+  sunday_mode:
+    prioritize_mock_test: true
+    prioritize_revision: true
+    prioritize_mock_interview: true
+    prioritize_leetcode_contest: true
+    prioritize_resume_update: true
+    prioritize_linkedin_update: true
+    prioritize_project_work: true
+
+revision:
+  strategy:
+    - 1
+    - 3
+    - 7
+    - 15
+    - 30
+
+notifications:
+  provider: "telegram"
+  morning_plan_time: "08:00"
+  evening_review_time: "22:00"
+  study_session_reminder_minutes: 10
+
+ai:
+  provider: "groq"
+  model: "llama-3.1-8b-instant"
+  temperature: 0.2
+
+ui:
+  theme: "dark"
+  dashboard_preferences:
+    show_readiness_score: true
+    show_countdown: true
+    show_daily_streak: true
