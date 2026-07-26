@@ -34,4 +34,4 @@ RUN mkdir -p roadmaps
 EXPOSE 8000 8501
 
 # Default entry point (can be overridden by docker-compose)
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "python app/telegram/bot.py"]
