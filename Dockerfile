@@ -24,8 +24,6 @@ RUN pip install --upgrade pip && \
 COPY app/ ./app/
 COPY configs/ ./configs/
 COPY scripts/ ./scripts/
-COPY imports/ ./imports/
-COPY exports/ ./exports/
 
 # Create roadmaps directory for curricular file stores
 RUN mkdir -p roadmaps
