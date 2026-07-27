@@ -271,24 +271,27 @@ class ImportEngine:
             content_text = raw_text
             saved_path = None
 
-        # 2. Extract structured content using LLM
+        # 2. Extract structured content using LLM (with rule-based fallback if AI service fails)
         prompt = f"Extract a structured roadmap from the following source text:\n\n{content_text}"
         logger.info("Sending document text to AI service for structured parsing...")
-        parsed_json = self.ai_service.generate_json(
-            prompt=prompt,
-            system_instruction=SYSTEM_INSTRUCTION
-        )
+        try:
+            parsed_json = self.ai_service.generate_json(
+                prompt=prompt,
+                system_instruction=SYSTEM_INSTRUCTION
+            )
+            parsed_json = self._normalize_parsed_json(parsed_json, title)
 
-        parsed_json = self._normalize_parsed_json(parsed_json, title)
-
-        # 3. Validate extraction schema via Pydantic
-        logger.info("Validating extracted data structure...")
-        if isinstance(parsed_json, dict):
-            if title:
-                parsed_json["title"] = title
-            elif "title" not in parsed_json or not parsed_json["title"]:
-                parsed_json["title"] = "Curriculum Roadmap"
-        roadmap_data = RoadmapImportSchema(**parsed_json)
+            # 3. Validate extraction schema via Pydantic
+            logger.info("Validating extracted data structure...")
+            if isinstance(parsed_json, dict):
+                if title:
+                    parsed_json["title"] = title
+                elif "title" not in parsed_json or not parsed_json["title"]:
+                    parsed_json["title"] = "Curriculum Roadmap"
+            roadmap_data = RoadmapImportSchema(**parsed_json)
+        except Exception as e:
+            logger.warning(f"AI parsing failed or encountered an error ({e}). Falling back to rule-based text parser.")
+            roadmap_data = self._fallback_parse_text(content_text, title or "Curriculum Roadmap")
 
         total_tasks = sum(
             len(t_data.tasks)
