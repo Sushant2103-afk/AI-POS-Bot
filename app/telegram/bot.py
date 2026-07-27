@@ -37,6 +37,28 @@ from app.core.config import settings
 from app.core.logging import logger
 from app.core.settings_service import get_user_setting, set_user_setting, get_all_user_settings
 
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"OK")
+    def log_message(self, format, *args):
+        pass
+
+def start_health_check_server():
+    try:
+        port = int(os.environ.get("PORT", 8000))
+        server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        logger.info(f"Health check HTTP server started on port {port}")
+    except Exception as e:
+        logger.warning(f"Could not start health check server: {e}")
+
 def get_db():
     db = SessionLocal()
     try:
@@ -1242,6 +1264,7 @@ def main():
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_keyboard_text_or_upload))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_keyboard_text_or_upload))
 
+    start_health_check_server()
     logger.info("Starting AI-POS Telegram Bot Polling...")
     app.run_polling(drop_pending_updates=True)
 
