@@ -108,9 +108,12 @@ class EnergyScheduler:
             
             # Check capacity limits
             if scheduled_minutes + task_duration > max_schedulable_mins:
-                logger.info(f"Task '{getattr(task, 'title', '')}' skipped due to study capacity limit reached.")
-                unscheduled_tasks.append(task)
-                continue
+                if not scheduled_sessions and max_schedulable_mins >= 15:
+                    task_duration = int(max_schedulable_mins)
+                else:
+                    logger.info(f"Task '{getattr(task, 'title', '')}' skipped due to study capacity limit reached.")
+                    unscheduled_tasks.append(task)
+                    continue
 
             is_high_energy = getattr(task, "energy_level", "medium").lower() == "high"
             best_block_idx = -1
@@ -146,9 +149,15 @@ class EnergyScheduler:
                 # Find first block with space
                 for idx, block in enumerate(space_blocks):
                     start, end = block
-                    if end - start >= task_duration:
+                    block_cap = end - start
+                    if block_cap >= task_duration:
                         best_block_idx = idx
                         best_placement_start = start
+                        break
+                    elif block_cap >= 15:
+                        best_block_idx = idx
+                        best_placement_start = start
+                        task_duration = block_cap
                         break
 
             if best_block_idx != -1:

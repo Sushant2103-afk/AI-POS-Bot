@@ -165,6 +165,13 @@ def build_plan_message_and_markup(db: Session, user_id: int, target_date):
     ).first()
     
     if not plan or not plan.study_sessions:
+        try:
+            planner = PlannerService(db)
+            plan = planner.generate_daily_plan(user_id, target_date)
+        except Exception as e:
+            logger.error(f"Error auto-generating daily plan for User #{user_id}: {e}")
+
+    if not plan or not plan.study_sessions:
         msg = (
             f"📅 *Daily Plan • {target_date}*\n"
             f"───────────────────────────\n\n"

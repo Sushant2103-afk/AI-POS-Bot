@@ -187,6 +187,13 @@ def render_scheduler(db: Session, user_id: int):
     ).first()
     
     if not plan or not plan.study_sessions:
+        try:
+            planner = PlannerService(db)
+            plan = planner.generate_daily_plan(user_id, target_date)
+        except Exception:
+            pass
+
+    if not plan or not plan.study_sessions:
         st.info(f"No study sessions generated for {target_date}. Click 'Generate Today's Plan' to calculate schedules.")
         return
         

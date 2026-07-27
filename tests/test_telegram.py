@@ -252,3 +252,42 @@ async def test_telegram_scheduler_jobs(db_session, monkeypatch):
     assert mock_send.call_count == 1
     assert "study block(s) left planned" in mock_send.call_args[0][1]
 
+@pytest.mark.anyio
+async def test_telegram_plan_auto_generation_on_demand(db_session):
+    # Setup user with roadmap and tasks, but NO pre-generated DailyPlans record for today
+    user = Users(name="OnDemandTester", email="ondemand@example.com")
+    db_session.add(user)
+    db_session.flush()
+    
+    setting = Settings(user_id=user.id, key="telegram_chat_id", value="55555")
+    db_session.add(setting)
+    
+    roadmap = Roadmaps(user_id=user.id, title="Auto Gen Roadmap", is_active=True, status="active")
+    db_session.add(roadmap)
+    db_session.flush()
+    
+    topic = Topics(roadmap_id=roadmap.id, title="Algorithms")
+    db_session.add(topic)
+    db_session.flush()
+    
+    task = Tasks(topic_id=topic.id, title="Binary Search", estimated_minutes=45)
+    db_session.add(task)
+    db_session.commit()
+    
+    update = MockUpdate(chat_id=55555)
+    context = MockContext()
+    
+    import app.telegram.bot
+    original_get_db = app.telegram.bot.get_db
+    app.telegram.bot.get_db = lambda: iter([db_session])
+    
+    try:
+        # Requesting /plan (which represents Today's Schedule button) without prior generation
+        await plan(update, context)
+        assert update.message.reply_text.call_count == 1
+        reply = update.message.reply_text.call_args[0][0]
+        assert "Daily Plan" in reply
+        assert "Binary Search" in reply
+    finally:
+        app.telegram.bot.get_db = original_get_db
+

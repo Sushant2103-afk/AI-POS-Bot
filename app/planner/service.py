@@ -207,7 +207,8 @@ class PlannerService:
         # B. Load active roadmaps
         active_roadmaps = self.db.query(Roadmaps).filter(
             Roadmaps.user_id == user_id,
-            (Roadmaps.status == "active") | (Roadmaps.status == None) & (Roadmaps.is_active == True)
+            Roadmaps.is_active == True,
+            (Roadmaps.status == "active") | (Roadmaps.status == None) | (Roadmaps.status == "")
         ).order_by(Roadmaps.priority.asc(), Roadmaps.id.asc()).all()
 
         day_num = target_date.weekday() # 0 = Monday, 6 = Sunday
