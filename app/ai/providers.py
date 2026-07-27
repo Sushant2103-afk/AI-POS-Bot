@@ -64,6 +64,37 @@ class MockAIProvider(BaseAIService):
         
         return {"status": "success", "message": "Mock JSON generated successfully."}
 
+class FallbackAIService(BaseAIService):
+    """
+    Decorator that wraps a primary AI service and automatically falls back to a backup provider
+    (e.g. MockAIProvider) if the primary provider fails due to 401 Unauthorized or network errors.
+    """
+    def __init__(self, primary: BaseAIService, backup: Optional[BaseAIService] = None):
+        self.primary = primary
+        self.backup = backup or MockAIProvider()
+        self.name = getattr(primary, "name", primary.__class__.__name__)
+        self.model = getattr(primary, "model", "default")
+
+    def generate_text(self, prompt: str, system_instruction: Optional[str] = None, temperature: float = 0.2) -> str:
+        try:
+            return self.primary.generate_text(prompt, system_instruction, temperature)
+        except Exception as e:
+            logger.warning(
+                f"Primary AI provider ({self.primary.__class__.__name__}) failed with error: {e}. "
+                f"Falling back to backup provider ({self.backup.__class__.__name__})."
+            )
+            return self.backup.generate_text(prompt, system_instruction, temperature)
+
+    def generate_json(self, prompt: str, response_schema: Optional[Dict[str, Any]] = None, system_instruction: Optional[str] = None, temperature: float = 0.2) -> Dict[str, Any]:
+        try:
+            return self.primary.generate_json(prompt, response_schema, system_instruction, temperature)
+        except Exception as e:
+            logger.warning(
+                f"Primary AI provider ({self.primary.__class__.__name__}) failed with error: {e}. "
+                f"Falling back to backup provider ({self.backup.__class__.__name__})."
+            )
+            return self.backup.generate_json(prompt, response_schema, system_instruction, temperature)
+
 def _clean_json_string(text: str) -> str:
     cleaned = text.strip()
     if cleaned.startswith("```json"):
