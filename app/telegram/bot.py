@@ -354,6 +354,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await target_msg.reply_text(reply_text, reply_markup=get_main_reply_keyboard())
         return
 
+    if target_msg:
+        await target_msg.reply_text(
+            "👋 *Welcome to AI Personal Operating System (AI-POS)!*\n"
+            "Use the navigation buttons at the bottom of your screen or the inline options below.",
+            parse_mode="Markdown",
+            reply_markup=get_main_reply_keyboard()
+        )
+
     await show_main_menu(update, chat_id)
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1149,34 +1157,34 @@ async def handle_keyboard_text_or_upload(update: Update, context: ContextTypes.D
     if text.startswith("/"):
         return
 
-    # Check persistent reply keyboard buttons
-    if "Upload Curriculum" in text or ("Upload" in text and "Curriculum" in text):
+    clean_text = text.lower().replace("'", "").replace("’", "").strip()
+
+    # Check persistent reply keyboard buttons and natural text commands
+    if any(k in clean_text for k in ["upload curriculum", "upload syllabus", "upload"]):
         await prompt_curriculum_upload(target_msg, context)
         return
-    elif "Roadmaps" in text:
-
-
+    elif "roadmap" in clean_text:
         await show_roadmaps_menu(target_msg, chat_id)
         return
-    elif "Schedule" in text or "Today's Schedule" in text or "Today's Plan" in text:
+    elif any(k in clean_text for k in ["todays plan", "today plan", "todays schedule", "today schedule", "schedule", "plan"]):
         await _send_plan(target_msg, chat_id)
         return
-    elif "Pending Tasks" in text:
+    elif "pending" in clean_text:
         await pending(update, context)
         return
-    elif "Auto-Schedule" in text:
+    elif any(k in clean_text for k in ["auto-schedule", "auto schedule", "autoschedule", "re-schedule", "reschedule"]):
         await _send_schedule(target_msg, chat_id)
         return
-    elif "Stats" in text or "Progress" in text or "Summary" in text:
+    elif any(k in clean_text for k in ["stat", "progress", "summary", "analytic"]):
         await _send_stats(target_msg, chat_id)
         return
-    elif "Learning History" in text:
+    elif "history" in clean_text:
         await show_learning_history(target_msg, chat_id, "completed")
         return
-    elif "Settings" in text:
+    elif any(k in clean_text for k in ["setting", "config", "preference"]):
         await show_settings_menu(target_msg, chat_id)
         return
-    elif "Help" in text:
+    elif any(k in clean_text for k in ["help", "guide", "menu"]):
         await help_command(update, context)
         return
 
@@ -1187,11 +1195,16 @@ async def handle_keyboard_text_or_upload(update: Update, context: ContextTypes.D
         content = await file_bytes.download_as_bytearray()
         text_content = content.decode("utf-8", errors="ignore")
         filename = doc.file_name or "curriculum.txt"
-    elif text and len(text) > 10:
+    elif text and len(text) > 30 and any(k in clean_text for k in ["syllabus", "curriculum", "week", "month", "module", "topic"]):
         text_content = text
         filename = "pasted_syllabus.txt"
     else:
-        await target_msg.reply_text("⚠️ Please send a valid curriculum text or syllabus document.")
+        if target_msg:
+            await target_msg.reply_text(
+                "⚠️ I didn't recognize that option.\n\n"
+                "Please use the navigation menu buttons below or send a syllabus file to generate a roadmap.",
+                reply_markup=get_main_reply_keyboard()
+            )
         return
 
     await target_msg.reply_text("⏳ *Parsing curriculum and generating roadmap...*", parse_mode="Markdown")

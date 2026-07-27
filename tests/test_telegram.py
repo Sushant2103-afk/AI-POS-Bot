@@ -291,3 +291,41 @@ async def test_telegram_plan_auto_generation_on_demand(db_session):
     finally:
         app.telegram.bot.get_db = original_get_db
 
+
+@pytest.mark.anyio
+async def test_telegram_keyboard_text_routing(db_session):
+    from app.telegram.bot import handle_keyboard_text_or_upload
+    
+    user = Users(name="KeyboardTester", email="kb@example.com")
+    db_session.add(user)
+    db_session.flush()
+    setting = Settings(user_id=user.id, key="telegram_chat_id", value="44444")
+    db_session.add(setting)
+    db_session.commit()
+
+    import app.telegram.bot
+    original_get_db = app.telegram.bot.get_db
+    app.telegram.bot.get_db = lambda: iter([db_session])
+
+    try:
+        # Test "todays plan" text routing
+        update = MockUpdate(chat_id=44444)
+        update.message.text = "todays plan"
+        context = MockContext()
+
+        await handle_keyboard_text_or_upload(update, context)
+        assert update.message.reply_text.call_count >= 1
+        reply = update.message.reply_text.call_args[0][0]
+        assert "Daily Plan" in reply
+
+        # Test "📅 Today's Schedule" text routing
+        update.message.reply_text.reset_mock()
+        update.message.text = "📅 Today's Schedule"
+        await handle_keyboard_text_or_upload(update, context)
+        assert update.message.reply_text.call_count >= 1
+        reply = update.message.reply_text.call_args[0][0]
+        assert "Daily Plan" in reply
+    finally:
+        app.telegram.bot.get_db = original_get_db
+
+
