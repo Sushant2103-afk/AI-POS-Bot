@@ -1094,7 +1094,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             db.commit()
             try:
                 from app.planner.service import PlannerService
-                PlannerService(db).generate_daily_plan(user_id, date.today())
+                PlannerService(db).generate_daily_plan(user_id, datetime.date.today())
             except Exception as e:
                 logger.error(f"Error regenerating plan after roadmap switch: {e}")
             await show_roadmaps_menu(update, chat_id)
@@ -1111,7 +1111,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             db.commit()
             try:
                 from app.planner.service import PlannerService
-                PlannerService(db).generate_daily_plan(user_id, date.today())
+                PlannerService(db).generate_daily_plan(user_id, datetime.date.today())
             except Exception as e:
                 logger.error(f"Error regenerating plan after setting primary roadmap: {e}")
             await show_roadmaps_menu(update, chat_id)
