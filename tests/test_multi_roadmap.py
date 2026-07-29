@@ -50,14 +50,16 @@ def test_import_multiple_independent_roadmaps(db_session, test_user):
         priority=2
     )
 
-    # Both roadmaps must be active and exist concurrently
-    all_roadmaps = db_session.query(Roadmaps).filter(Roadmaps.user_id == test_user.id).all()
+    # rm2 was imported second, so rm1 (previous active) is auto-paused to focus on rm2 (new active focus)
+    all_roadmaps = db_session.query(Roadmaps).filter(Roadmaps.user_id == test_user.id).order_by(Roadmaps.id.asc()).all()
     assert len(all_roadmaps) == 2
     titles = [r.title for r in all_roadmaps]
     assert "Placement Prep" in titles
     assert "AI/ML Engineering" in titles
-    assert all_roadmaps[0].status == "active"
+    assert all_roadmaps[0].status == "paused"
+    assert all_roadmaps[0].is_active is False
     assert all_roadmaps[1].status == "active"
+    assert all_roadmaps[1].is_active is True
 
 def test_multi_roadmap_planner_priority(db_session, test_user):
     """Verify that PlannerService schedules tasks from multiple active roadmaps sorted by priority."""
@@ -78,6 +80,15 @@ def test_multi_roadmap_planner_priority(db_session, test_user):
         category="AI/ML",
         priority=2
     )
+
+    # Explicitly activate both roadmaps with priorities 1 and 2 to test multi-roadmap priority ordering
+    rm1.status = "active"
+    rm1.is_active = True
+    rm1.priority = 1
+    rm2.status = "active"
+    rm2.is_active = True
+    rm2.priority = 2
+    db_session.commit()
 
     planner = PlannerService(db_session)
     monday_date = datetime.date(2026, 7, 27) # Monday
@@ -109,7 +120,9 @@ def test_paused_roadmap_exclusion(db_session, test_user):
         priority=2
     )
 
-    # Pause rm2
+    # Ensure rm1 is active and rm2 is paused
+    rm1.status = "active"
+    rm1.is_active = True
     rm2.status = "paused"
     rm2.is_active = False
     db_session.commit()

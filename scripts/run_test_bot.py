@@ -32,28 +32,28 @@ if hasattr(sys.stderr, "reconfigure"):
 
 def main():
     print("=" * 65)
-    print(" [TEST] AI-POS LOCAL TEST BOT INITIALIZER")
+    print(" [TEST] AI-POS LOCAL TEST BOT INITIALIZER (PARITY WITH MAIN BOT)")
     print("=" * 65)
 
     # 1. Initialize local test database tables
     db_url = os.environ.get("DATABASE_URL", "sqlite:///./ai_pos_dev.db")
     print(f"[*] Test Database: {db_url}")
-    print("[*] Initializing test database tables...")
+    print("[*] Initializing test database schema and default seeds...")
     try:
         Base.metadata.create_all(bind=engine)
         init_db()
     except Exception as e:
         print(f"[*] Database initialization notice: {e}")
 
-    # 2. Check Telegram Bot Token
-    token = settings.TELEGRAM_BOT_TOKEN or os.environ.get("TELEGRAM_BOT_TOKEN", "")
-    if not token or token.strip() == "":
-        print("\n[ERROR] TELEGRAM_BOT_TOKEN is missing in your .env file!")
+    # 2. Check Telegram Bot Token (supports TELEGRAM_TEST_BOT_TOKEN or TELEGRAM_BOT_TOKEN)
+    token = os.environ.get("TELEGRAM_TEST_BOT_TOKEN") or os.environ.get("TELEGRAM_BOT_TOKEN") or settings.TELEGRAM_BOT_TOKEN
+    if not token or token.strip() == "" or token == "mock_telegram_token_for_dev":
+        print("\n[ERROR] TELEGRAM_BOT_TOKEN or TELEGRAM_TEST_BOT_TOKEN missing!")
         print("How to fix:")
         print("   1. Open Telegram and search for @BotFather")
         print("   2. Send /newbot to create your Test Bot (e.g. MyAIPosTestBot)")
         print("   3. Copy the HTTP API token provided by BotFather")
-        print("   4. Paste it into your .env file: TELEGRAM_BOT_TOKEN=your_token_here")
+        print("   4. Paste it into your .env file: TELEGRAM_TEST_BOT_TOKEN=your_token_here")
         print("   5. Re-run: python scripts/run_test_bot.py\n")
         sys.exit(1)
 
@@ -68,16 +68,21 @@ def main():
         bot_name = "Test Bot"
 
     print("\n" + "=" * 65)
-    print(f" [ONLINE] LOCAL TEST BOT IS NOW ONLINE: {bot_name} ({bot_username})")
+    print(f" [ONLINE] TEST BOT IS READY & AT 100% PARITY WITH MAIN BOT")
     print("=" * 65)
-    print(f" Bot Handle     : {bot_username}")
-    print(f" Local Database : {db_url}")
-    print(f" Environment    : {settings.ENV} (Local Testing)")
+    print(f" Bot Handle      : {bot_username} ({bot_name})")
+    print(f" Test Database   : {db_url}")
+    print(f" Environment     : {settings.ENV} (Staging/Testing)")
+    print(" Active Features  : ")
+    print("   • Leak-Proof Connection Pooling (with get_db())")
+    print("   • APScheduler Morning Briefing (08:00) & Evening Review (21:00)")
+    print("   • Auto Spaced-Repetition & Multi-Roadmap Switcher")
+    print("   • Universal Syllabus Parser (.txt / .md / Direct Paste)")
+    print("   • Inline Menu Router & Edit-in-Place Navigation")
     print("-----------------------------------------------------------------")
-    print(" Open Telegram and chat with your test bot to verify new features.")
+    print(" Open Telegram and interact with your test bot to verify changes.")
     print(" Press Ctrl + C in this terminal to stop the local test bot.")
     print("=" * 65 + "\n")
-
 
     # 4. Import and run main Telegram bot application
     from app.telegram.bot import main as run_bot

@@ -304,7 +304,18 @@ class ImportEngine:
             logger.info("AI extracted 0 tasks. Running rule-based text fallback parser...")
             roadmap_data = self._fallback_parse_text(content_text, title or "Curriculum Roadmap")
 
-        # 4. Handle replacement option if explicitly requested
+        # 4. Handle auto-pausing existing active roadmaps so focus shifts to the newly imported roadmap
+        existing_active = self.db.query(Roadmaps).filter(
+            Roadmaps.user_id == user_id,
+            Roadmaps.is_active == True
+        ).all()
+        for old_roadmap in existing_active:
+            old_roadmap.status = "paused"
+            old_roadmap.is_active = False
+            if old_roadmap.priority == 1:
+                old_roadmap.priority = 2
+            self.db.add(old_roadmap)
+
         if replace:
             existing_roadmaps = self.db.query(Roadmaps).filter(
                 Roadmaps.user_id == user_id,
@@ -314,8 +325,6 @@ class ImportEngine:
                 old_roadmap.status = "archived"
                 old_roadmap.is_active = False
                 self.db.add(old_roadmap)
-
-        # Keep existing roadmaps active so multiple roadmaps coexist
 
         # 5. Persist Relational Structure as Independent Roadmap
         logger.info(f"Writing roadmap '{roadmap_data.title}' into database...")

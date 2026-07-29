@@ -40,9 +40,14 @@ async def test_telegram_start_command(db_session):
     context = MockContext(args=[str(user.id)])
     
     # Override get_db in the module for session consistency
+    from contextlib import contextmanager
+    @contextmanager
+    def mock_get_db():
+        yield db_session
+
     import app.telegram.bot
     original_get_db = app.telegram.bot.get_db
-    app.telegram.bot.get_db = lambda: iter([db_session])
+    app.telegram.bot.get_db = mock_get_db
     
     try:
         await start(update, context)
@@ -113,9 +118,14 @@ async def test_telegram_plan_and_today_commands(db_session):
     update = MockUpdate(chat_id=88888)
     context = MockContext()
     
+    from contextlib import contextmanager
+    @contextmanager
+    def mock_get_db():
+        yield db_session
+
     import app.telegram.bot
     original_get_db = app.telegram.bot.get_db
-    app.telegram.bot.get_db = lambda: iter([db_session])
+    app.telegram.bot.get_db = mock_get_db
     
     try:
         # Test /plan
@@ -185,9 +195,14 @@ async def test_telegram_complete_command(db_session):
     update = MockUpdate(chat_id=77777)
     context = MockContext(args=[str(session.id)])
     
+    from contextlib import contextmanager
+    @contextmanager
+    def mock_get_db():
+        yield db_session
+
     import app.telegram.bot
     original_get_db = app.telegram.bot.get_db
-    app.telegram.bot.get_db = lambda: iter([db_session])
+    app.telegram.bot.get_db = mock_get_db
     
     try:
         await complete(update, context)
@@ -277,9 +292,14 @@ async def test_telegram_plan_auto_generation_on_demand(db_session):
     update = MockUpdate(chat_id=55555)
     context = MockContext()
     
+    from contextlib import contextmanager
+    @contextmanager
+    def mock_get_db():
+        yield db_session
+
     import app.telegram.bot
     original_get_db = app.telegram.bot.get_db
-    app.telegram.bot.get_db = lambda: iter([db_session])
+    app.telegram.bot.get_db = mock_get_db
     
     try:
         # Requesting /plan (which represents Today's Schedule button) without prior generation
@@ -303,9 +323,14 @@ async def test_telegram_keyboard_text_routing(db_session):
     db_session.add(setting)
     db_session.commit()
 
+    from contextlib import contextmanager
+    @contextmanager
+    def mock_get_db():
+        yield db_session
+
     import app.telegram.bot
     original_get_db = app.telegram.bot.get_db
-    app.telegram.bot.get_db = lambda: iter([db_session])
+    app.telegram.bot.get_db = mock_get_db
 
     try:
         # Test "todays plan" text routing

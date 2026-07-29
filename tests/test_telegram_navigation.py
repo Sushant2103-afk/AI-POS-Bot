@@ -79,9 +79,14 @@ async def test_telegram_menu_navigation_flow(db_session):
     db_session.add(roadmap)
     db_session.commit()
 
+    from contextlib import contextmanager
+    @contextmanager
+    def mock_get_db():
+        yield db_session
+
     import app.telegram.bot
     original_get_db = app.telegram.bot.get_db
-    app.telegram.bot.get_db = lambda: iter([db_session])
+    app.telegram.bot.get_db = mock_get_db
 
     try:
         # 1. Main Menu -> Settings (callback query)
